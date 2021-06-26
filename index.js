@@ -11,7 +11,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(cors());
 
-const uri = "mongodb+srv://abidretro:abidretro123@cluster0.o8ccw.mongodb.net/abidretro?retryWrites=true&w=majority";
+const uri = `mongodb+srv://${process.env.USER}:${process.env.PASS}@cluster0.o8ccw.mongodb.net/${process.env.DBNAME}?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -19,50 +19,29 @@ const client = new MongoClient(uri, {
 client.connect((err) => {
   console.log("Database Connection Error", err);
     const productCollection = client.db("abidretro").collection("blogpost");
-    const productCollectionForOrder = client.db("abidretro").collection("blogpost");
 
-    app.get("/events", (req, res) => {
+    app.get("/posts", (req, res) => {
         productCollection.find().toArray((err, items) => {
             res.send(items);
         });
     });
 
-    app.post("/addEvent", (req, res) => {
+    app.post("/addPost", (req, res) => {
         const newEvent = req.body;
-        console.log("adding new event: ", newEvent);
+        console.log("adding new post: ", newEvent);
         productCollection.insertOne(newEvent).then((result) => {
             console.log("inserted count", result.insertedCount);
             res.send(result.insertedCount > 0);
         });
     });
 
-    app.get("/checkout/:_id", (req, res) => {
+    app.get("/posts/:_id", (req, res) => {
         console.log(req.params._id);
         productCollection.find({ _id: ObjectId(req.params._id) })
 
             .toArray((err, documents) => {
                 res.send(documents[0]);
             });
-    });
-
-    app.post("/addOrders", (req, res) => {
-        const newOrder = req.body;
-        productCollectionForOrder.insertOne(newOrder).then((result) => {
-            res.send(result.insertedCount > 0);
-        });
-    });
-
-    app.get("/orders", (req, res) => {
-        productCollectionForOrder.find().toArray((err, items) => {
-            res.send(items);
-        });     
-    });
-    
-    app.delete('/delete/:_id',(req,res) => {
-        productCollection.deleteOne({_id:ObjectId(req.params.id)})
-        .then((result) => {
-            res.send(result.deletedCount>0);
-        })
     });
 
 });
