@@ -1,47 +1,74 @@
 const express = require("express");
+const MongoClient = require("mongodb").MongoClient;
+const bodyParser = require("body-parser");
+const cors = require("cors");
+const ObjectId = require("mongodb").ObjectId;
+const port = process.env.PORT || 8000;
+
+require("dotenv").config();
+
 const app = express();
-const dotenv = require("dotenv");
-const mongoose = require("mongoose");
-const authRoute = require("./routes/auth");
-const userRoute = require("./routes/users");
-const postRoute = require("./routes/posts");
-const categoryRoute = require("./routes/categories");
-const multer = require("multer");
-const path = require("path");
-
-dotenv.config();
+app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
-app.use("/images", express.static(path.join(__dirname, "/images")));
+app.use(cors());
 
-mongoose
-  .connect(`mongodb+srv://${process.env.USER}:${process.env.PASS}@cluster0.o8ccw.mongodb.net/${process.env.DBNAME}?retryWrites=true&w=majority`, {
+const uri = "mongodb+srv://abidretro:abidretro123@cluster0.o8ccw.mongodb.net/abidretro?retryWrites=true&w=majority";
+const client = new MongoClient(uri, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    useCreateIndex: true,
-    useFindAndModify:true
-  })
-  .then(console.log("Connected to MongoDB"))
-  .catch((err) => console.log(err));
+});
+client.connect((err) => {
+    const productCollection = client.db("abidretro").collection("blogpost");
+    const productCollectionForOrder = client.db("abidretro").collection("blogpost");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "images");
-  },
-  filename: (req, file, cb) => {
-    cb(null, req.body.name);
-  },
+    app.get("/events", (req, res) => {
+        productCollection.find().toArray((err, items) => {
+            res.send(items);
+        });
+    });
+
+    app.post("/addEvent", (req, res) => {
+        const newEvent = req.body;
+        console.log("adding new event: ", newEvent);
+        productCollection.insertOne(newEvent).then((result) => {
+            console.log("inserted count", result.insertedCount);
+            res.send(result.insertedCount > 0);
+        });
+    });
+
+    app.get("/checkout/:_id", (req, res) => {
+        console.log(req.params._id);
+        productCollection.find({ _id: ObjectId(req.params._id) })
+
+            .toArray((err, documents) => {
+                res.send(documents[0]);
+            });
+    });
+
+    app.post("/addOrders", (req, res) => {
+        const newOrder = req.body;
+        productCollectionForOrder.insertOne(newOrder).then((result) => {
+            res.send(result.insertedCount > 0);
+        });
+    });
+
+    app.get("/orders", (req, res) => {
+        productCollectionForOrder.find().toArray((err, items) => {
+            res.send(items);
+        });     
+    });
+    
+    app.delete('/delete/:_id',(req,res) => {
+        productCollection.deleteOne({_id:ObjectId(req.params.id)})
+        .then((result) => {
+            res.send(result.deletedCount>0);
+        })
+    });
+
 });
 
-const upload = multer({ storage: storage });
-app.post("/api/upload", upload.single("file"), (req, res) => {
-  res.status(200).json("File has been uploaded");
+app.get("/", (req, res) => {
+    res.send("Hello Bangladesh");
 });
 
-app.use("/api/auth", authRoute);
-app.use("/api/users", userRoute);
-app.use("/api/posts", postRoute);
-app.use("/api/categories", categoryRoute);
-
-app.listen("5000", () => {
-  console.log("Backend is running.");
-});
+app.listen(port);
