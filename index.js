@@ -1,6 +1,5 @@
 const express = require("express");
 const MongoClient = require("mongodb").MongoClient;
-const bodyParser = require("body-parser");
 const cors = require("cors");
 const ObjectId = require("mongodb").ObjectId;
 const port = process.env.PORT || 8000;
@@ -18,6 +17,7 @@ const client = new MongoClient(uri, {
     useUnifiedTopology: true,
 });
 client.connect((err) => {
+  console.log("Database Connection Error", err);
     const productCollection = client.db("abidretro").collection("blogpost");
     const productCollectionForOrder = client.db("abidretro").collection("blogpost");
 
