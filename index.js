@@ -18,10 +18,10 @@ const client = new MongoClient(uri, {
 });
 client.connect((err) => {
   console.log("Database Connection Error", err);
-    const productCollection = client.db("abidretro").collection("blogpost");
+    const blogCollection = client.db("abidretro").collection("blogpost");
 
     app.get("/posts", (req, res) => {
-        productCollection.find().toArray((err, items) => {
+        blogCollection.find().toArray((err, items) => {
             res.send(items);
         });
     });
@@ -29,7 +29,7 @@ client.connect((err) => {
     app.post("/addPost", (req, res) => {
         const newEvent = req.body;
         console.log("adding new post: ", newEvent);
-        productCollection.insertOne(newEvent).then((result) => {
+       blogCollection.insertOne(newEvent).then((result) => {
             console.log("inserted count", result.insertedCount);
             res.send(result.insertedCount > 0);
         });
@@ -37,12 +37,19 @@ client.connect((err) => {
 
     app.get("/posts/:_id", (req, res) => {
         console.log(req.params._id);
-        productCollection.find({ _id: ObjectId(req.params._id) })
+        blogCollection.find({ _id: ObjectId(req.params._id) })
 
             .toArray((err, documents) => {
                 res.send(documents[0]);
             });
     });
+
+    app.delete('/posts/:id', (req, res) => {
+        blogCollection.deleteOne({ _id: ObjectId(req.params.id) })
+          .then(result => {
+            res.send(result.deletedCount > 0);
+          })
+      });
 
 });
 
